@@ -10,7 +10,8 @@ import threading
 import datetime
 
 # 匹配 非汉字、非英文字符、非 \t、非 \n
-PATTERN_3 = re.compile(u'[^\u4E00-\u9FA5\u0041-\u005A\u0061-\u007A\t\n]')
+# PATTERN_3 = re.compile(u'[^\u4E00-\u9FA5\u0041-\u005A\u0061-\u007A\t\n]')
+PATTERN_3 = re.compile(u'[^\u4E00-\u9FA5\t\n]')
 
 
 class DataHelper:

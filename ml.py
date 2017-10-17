@@ -109,7 +109,7 @@ class LRClassifier(Classifier):
     """
     def __init__(self, X, y, num, classifier_name):
         super().__init__(X, y, num, classifier_name)
-        self.classifier = LogisticRegression()
+        self.classifier = LogisticRegression(n_jobs=-1)
 
 
 class DTClassifier(Classifier):
@@ -166,11 +166,11 @@ class RFClassifier(Classifier):
     """
     def __init__(self, X, y, num, classifier_name):
         super().__init__(X, y, num, classifier_name)
-        self.classifier = RandomForestClassifier()
+        self.classifier = RandomForestClassifier(n_jobs=-1)
         self.param_grid = {'n_estimators': [1, 5, 10, 50, 100, 200, 500, 1000], }
 
     def redefine_classifier(self):
-        self.classifier = RandomForestClassifier(n_estimators=self.best_params_['n_estimators'])
+        self.classifier = RandomForestClassifier(n_jobs=-1, n_estimators=self.best_params_['n_estimators'])
 
 
 class KNNClassifier(Classifier):
@@ -179,11 +179,11 @@ class KNNClassifier(Classifier):
     """
     def __init__(self, X, y, num, classifier_name):
         super().__init__(X, y, num, classifier_name)
-        self.classifier = KNeighborsClassifier()
+        self.classifier = KNeighborsClassifier(n_jobs=-1)
         self.param_grid = {'n_neighbors' : np.arange(1,32,1), }
 
     def redefine_classifier(self):
-        self.classifier = KNeighborsClassifier(n_neighbors=self.best_params_['n_neighbors'])
+        self.classifier = KNeighborsClassifier(n_jobs=-1, n_neighbors=self.best_params_['n_neighbors'])
 
 
 class ClassifierManager:
@@ -193,11 +193,11 @@ class ClassifierManager:
     def __init__(self, X, y):
         self.classifiers = [
             RFClassifier(X, y, 10000, 'rf.model'),
-            # SVCClassifier(X, y, 1000, 'svc.model'),
-            # LinearClassifier(X, y, 20000, 'linear.model'),
+            LinearClassifier(X, y, 20000, 'linear.model'),
             # MNBClassifier(X, y, 20000, 'mnb.model'),
-            # LRClassifier(X, y, 20000, 'lr.model'),
-            # KNNClassifier(X, y, 2000, 'knn.model'),
+            LRClassifier(X, y, 20000, 'lr.model'),
+            KNNClassifier(X, y, 10000, 'knn.model'),
+            SVCClassifier(X, y, 6000, 'svc.model'),
         ]
 
     def run(self):

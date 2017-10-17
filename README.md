@@ -55,3 +55,8 @@ git push origin master
 - 2VModelManager: 　Doc2Vec，12个线程
 - W2VModelManager: Word2Vec, 12个线程
 - Doc2Words: 用了 2 * 12个线程
+
+### 参考资料
+
+L0,L1,L2范数 http://blog.csdn.net/zouxy09/article/details/24971995
+

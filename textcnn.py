@@ -3,15 +3,21 @@ import numpy as np
 import cfg
 import os
 
-N_CLASSES = 2
+NUM_CLASSES = 2
 LEARNING_RATE = 1e-3
 MAX_STEP = 150000
 FILTER_SIZE = [3, 4, 5]
 DROPOUT_KEEP_PROB = 0.5
 BATCH_SIZE = 64
+L2_REG_LAMBDA = 0
+SEQUENTE_LENGTH = 69
+WORD_VECTOR_LENGTH = 200
+NUM_FILTERS = 128
 
 
 def text_cnn(X, sequence_length, num_classes, filter_sizes, word_vector_length, num_filters):
+
+    l2_loss = tf.constant(0.0)
     pooled_outputs = []
     # 为每个 filter 创建一个卷积层和一个池化层
     for i, filter_size in enumerate(filter_sizes):
@@ -45,24 +51,27 @@ def text_cnn(X, sequence_length, num_classes, filter_sizes, word_vector_length, 
     with tf.name_scope('dropout'):
         h_drop = tf.nn.dropout(h_pool_flat, DROPOUT_KEEP_PROB)
 
+    # output
     with tf.name_scope('output'):
         W = tf.get_variable(
             'W',
             shape=[num_filters_total, num_classes],
             initializer=tf.contrib.layers.xavier_initializer())
         b = tf.Variable(tf.constant(0.1, shape=[num_classes]), name='b')
+        l2_loss += tf.nn.l2_loss(W)
+        l2_loss += tf.nn.l2_loss(b)
         scores = tf.nn.xw_plus_b(h_drop, W, b, name='scores')
-        return scores
+        return l2_loss, scores
 
 
-def losses(scores, labels):
+def losses(l2_loss, scores, labels, l2_reg_lambda=L2_REG_LAMBDA):
     with tf.variable_scope('loss') as scope:
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
             logits=scores,
             labels=labels,
             name='cross_entropy_per_example'
         )
-        loss = tf.reduce_mean(loss, name='loss')
+        loss = tf.reduce_mean(loss, name='loss') + l2_reg_lambda * l2_loss
     return loss
 
 
@@ -84,9 +93,13 @@ def set_batch(images, labels):
 
 
 def optimize(loss):
-    with tf.variable_scope('optimizer') as scope:
-        train_op = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(loss)
+    optimizer = tf.train.AdamOptimizer(1e-3)
+    grads_and_vars = optimizer.compute_gradients(loss)
+    train_op = optimizer.apply_gradients(grads_and_vars)
     return train_op
+    # with tf.variable_scope('optimizer') as scope:
+    #     train_op = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(loss)
+    # return train_op
 
 
 def run():
@@ -94,16 +107,16 @@ def run():
     images, labels = generate_data()
     image_batch, label_batch = set_batch(images, labels)
 
-    scores = text_cnn(
+    l2_loss, scores = text_cnn(
         image_batch,
-        sequence_length=200,
-        num_classes=2,
-        filter_sizes=[3, 4, 5],
-        word_vector_length=200,
-        num_filters=128
+        sequence_length=SEQUENTE_LENGTH,
+        num_classes=NUM_CLASSES,
+        filter_sizes=FILTER_SIZE,
+        word_vector_length=WORD_VECTOR_LENGTH,
+        num_filters=NUM_FILTERS
     )
 
-    train_losses = losses(scores, label_batch)
+    train_losses = losses(l2_loss, scores, label_batch, L2_REG_LAMBDA)
     train_op = optimize(train_losses)
     train_acc = accuracy(scores, label_batch)
 
@@ -120,9 +133,9 @@ def run():
             if coord.should_stop():
                 break
             _, tra_loss, tra_acc = sess.run([train_op, train_losses, train_acc])
-
+            print('Step %d, train loss = %.2f, train accuracy = %.2f%%' % (step, tra_loss, tra_acc * 100.0))
             if step % 50 == 0:
-                print('Step %d, train loss = %.2f, train accuracy = %.2f%%' % (step, tra_loss, tra_acc * 100.0))
+                # print('Step %d, train loss = %.2f, train accuracy = %.2f%%' % (step, tra_loss, tra_acc * 100.0))
                 summary_str = sess.run(summary_op)
                 train_writer.add_summary(summary_str, step)
 
@@ -139,11 +152,22 @@ def run():
     sess.close()
 
 
-def generate_data():
-    num = 1000
-    labels = np.random.randint(0, 2, num)
-    images = np.random.random([num, 200, 200, 1])
-    print('label size :{}, image size {}'.format(labels.shape, images.shape))
-    return images, labels
+# def generate_data():
+#     num = 1000
+#     labels = np.random.randint(0, 2, num)
+#     images = np.random.random([num, 69, 200, 1])
+#     print('label size :{}, image size {}'.format(labels.shape, images.shape))
+#     return images, labels
+
+# def generate_data(X, y):
+#     # num = 1000
+#     # labels = np.random.randint(0, 2, num)
+#     # images = np.random.random([num, 784])
+#     # images = images.reshape([-1,28,28,1])
+#     # print('label size :{}, image size {}'.format(labels.shape, images.shape))
+#     # return images, labels
+#     labels = y
+#     images = X.reshape([-1, 10, 30, 1])
+#     return images, labels
 
 run()
