@@ -6,7 +6,8 @@ DATA_PATH = '../data/'
 MODEL_PATH = '../model/'
 RESULT_PATH = '../result/'
 CLASSIFIER_PATH = '../classifier/'
-LOG_PATH = '../logs/'
+LOG_PATH_CNN = '../logs/cnn/'
+LOG_PATH_TEXTCNN = '../logs/text_cnn/'
 
 
 def mkdir(path):
@@ -21,4 +22,5 @@ mkdir(DATA_PATH)
 mkdir(MODEL_PATH)
 mkdir(RESULT_PATH)
 mkdir(CLASSIFIER_PATH)
-mkdir(LOG_PATH)
+mkdir(LOG_PATH_CNN)
+mkdir(LOG_PATH_TEXTCNN)

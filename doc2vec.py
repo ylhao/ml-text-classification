@@ -4,7 +4,7 @@ import codecs
 import cfg
 from gensim.models import Doc2Vec
 from gensim.models.doc2vec import LabeledSentence
-
+import datetime
 
 class DocList(object):
     """
@@ -17,7 +17,8 @@ class DocList(object):
         for filename in self.filename_list:
             for line_num, line in enumerate(codecs.open(filename, encoding='utf8')):
                 if (line_num + 1) % 50000 == 0:
-                    print('%s done' % (line_num+1))
+                    time_str = datetime.datetime.now().isoformat()
+                    print('%s, %s done' % (time_str, line_num + 1))
                 line = line.split('\t')
                 words = []
                 words.extend(line[1].split())
@@ -35,9 +36,9 @@ class D2VModelManager:
     Doc2Vec模型管理器
     """
     def __init__(self):
-        self.train_words_file = cfg.data_path + 'train_words.csv'
-        self.test_words_file = cfg.data_path + 'test_words.csv'
-        self.dm_model_name = cfg.model_path + 'dm.d2v'
+        self.train_words_file = cfg.DATA_PATH + 'train_words.csv'
+        self.test_words_file = cfg.DATA_PATH + 'test_words.csv'
+        self.dm_model_name = cfg.MODEL_PATH + 'dm.d2v'
 
     def train_model(self):
         """
@@ -46,7 +47,7 @@ class D2VModelManager:
         """
         doc_l = DocList([self.train_words_file, self.test_words_file])
         d2v = Doc2Vec(dm=1, size=300, negative=5, hs=1, sample=1e-5,
-                      window=10, min_count=5, workers=10, alpha=0.025, min_alpha=0.025)
+                      window=10, min_count=5, workers=12, alpha=0.025, min_alpha=0.025)
         d2v.build_vocab(doc_l)
         for epoch in range(10):
             d2v.train(doc_l, total_examples=d2v.corpus_count, epochs=1)
@@ -64,6 +65,6 @@ class D2VModelManager:
         :param model_name: 模型名
         :return: doc2vec model
         """
-        return Doc2Vec.load(cfg.model_path + model_name)
+        return Doc2Vec.load(cfg.MODEL_PATH + model_name)
 
 

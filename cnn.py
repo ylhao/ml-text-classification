@@ -1,7 +1,6 @@
 # coding: utf-8
 
 import tensorflow as tf
-import numpy as np
 import cfg
 import os
 
@@ -165,7 +164,7 @@ def run(X, y):
 
     summary_op = tf.summary.merge_all()
     sess = tf.Session()
-    train_writer = tf.summary.FileWriter(cfg.log_path, sess.graph)
+    train_writer = tf.summary.FileWriter(cfg.LOG_PATH_CNN, sess.graph)
     saver = tf.train.Saver()
     sess.run(tf.global_variables_initializer())
     coord = tf.train.Coordinator()
@@ -182,7 +181,7 @@ def run(X, y):
                 train_writer.add_summary(summary_str, step)
 
             if step % 2000 == 0 or (step + 1) == MAX_STEP:
-                checkpoint_path = os.path.join(cfg.log_path, 'model.ckpt')
+                checkpoint_path = os.path.join(cfg.LOG_PATH_CNN, 'model.ckpt')
                 saver.save(sess, checkpoint_path, global_step=step)
 
     except tf.errors.OutOfRangeError:

@@ -1,6 +1,5 @@
 # coding:utf-8
 
-from time import time
 from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier

@@ -7,6 +7,7 @@ import cfg
 import pandas as pd
 import codecs
 import threading
+import datetime
 
 # 匹配 非汉字、非英文字符、非 \t、非 \n
 PATTERN_3 = re.compile(u'[^\u4E00-\u9FA5\u0041-\u005A\u0061-\u007A\t\n]')
@@ -84,7 +85,8 @@ class Doc2Words:
             content_words = [word for word in list(jieba.cut(re.sub(PATTERN_3, ' ', df.iloc[line_num]['content'])))
                               if word not in self.stop_words]
             if (line_num + 1) % 10000 == 0:
-                print('%s: %s done' % (words_file, (line_num + 1)))
+                time_str = datetime.datetime.now().isoformat()
+                print('%s, %s: %s done' % (time_str, words_file, (line_num + 1)))
             fw.write('%s\t%s\t%s\n' % (df.iloc[line_num]['id'], ' '.join(headline_words), ' '.join(content_words)))
         fw.close()
         print(time.time() - start)
@@ -100,7 +102,7 @@ class Doc2Words:
     def run(self, df_list):
         self.set_stop_words()  # 设置停用词
         # self.set_user_dict()  # 自定义词典
-        jieba.enable_parallel(4)
+        jieba.enable_parallel(12)
         ts = [threading.Thread(target=self.cut, args=(df_list[0], self.train_words_file)),
               threading.Thread(target=self.cut, args=(df_list[1], self.test_words_file))]
         for t in ts:
