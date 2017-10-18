@@ -12,6 +12,9 @@ class MySentences(object):
     Word2Vec 使用的文档迭代器
     """
     def __init__(self, filename_list):
+        """
+        :param filename_list: 文件名列表 
+        """
         self.filename_list = filename_list
 
     def __iter__(self):
@@ -20,10 +23,10 @@ class MySentences(object):
                 if (line_num + 1) % 50000 == 0:
                     time_str = datetime.datetime.now().isoformat()
                     print('%s, %s done' % (time_str, line_num+1))
-                line = line.split('\t')
+                line = line.strip().split('\t')
                 words = []
-                words.extend(line[1].split())
-                words.extend(line[2].split())
+                words.extend(line[1].split())  # head
+                words.extend(line[2].split())  # content
                 yield words
 
 
@@ -34,14 +37,16 @@ class W2VModelManager:
     def __init__(self):
         self.train_words_file = cfg.DATA_PATH + 'train_words.csv'
         self.test_words_file = cfg.DATA_PATH + 'test_words.csv'
+        self.train_words_file_pos = cfg.DATA_PATH + 'train_words_pos.csv'
         self.model_name = cfg.MODEL_PATH + 'sg.w2v'  # sg=1
 
     def train_model(self):
         """
-        训练 word2vec model
+        train word2vec model
         :return: word2vec model
         """
-        sens = MySentences([self.train_words_file, self.test_words_file])
+        # sens = MySentences([self.train_words_file, self.test_words_file])
+        sens = MySentences([self.train_words_file_pos])
         w2v = Word2Vec(sens, size=200, window=5, sg=1, min_count=10, workers=12, iter=20)
         w2v.save(self.model_name)
         print('save w2v model done')
@@ -49,10 +54,18 @@ class W2VModelManager:
     @staticmethod
     def load_model(model_name):
         """
-        加载训练完成的 word2vec model
-        :param model_name: 模型名
+        load word2vec model
+        :param model_name: word2vec model name
         :return: word2vec model
         """
         return Word2Vec.load(cfg.MODEL_PATH + model_name)
+
+"""
+model = W2VModelManager.load_model('sg.w2v')
+print(model.most_similar(positive=['经济', '消防'], negative=['救援'], topn=1))
+print(model['经济'])
+"""
+
+
 
 

@@ -6,6 +6,7 @@ from gensim.models import Doc2Vec
 from gensim.models.doc2vec import LabeledSentence
 import datetime
 
+
 class DocList(object):
     """
     文档迭代器
@@ -19,7 +20,7 @@ class DocList(object):
                 if (line_num + 1) % 50000 == 0:
                     time_str = datetime.datetime.now().isoformat()
                     print('%s, %s done' % (time_str, line_num + 1))
-                line = line.split('\t')
+                line = line.strip().split('\t')
                 words = []
                 words.extend(line[1].split())
                 words.extend(line[2].split())
@@ -33,7 +34,7 @@ class DocList(object):
 
 class D2VModelManager:
     """
-    Doc2Vec模型管理器
+    Doc2Vec 模型管理器
     """
     def __init__(self):
         self.train_words_file = cfg.DATA_PATH + 'train_words.csv'

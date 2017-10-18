@@ -39,6 +39,12 @@ sudo pip3 install scipy
 sudo pip3 install -U scikit-learn
 sudo pip3 install --upgrade gensim
 sudo pip3 install --upgrade https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl
+
+# 重新安装tensorflow
+sudo pip3 uninstall tensorflow
+# sudo pip install --upgrade pip
+sudo pip3 install --upgrade pip
+sudo pip3 install tensorflow
 ```
 ### git 操作
 
@@ -61,34 +67,36 @@ L0,L1,L2范数 http://blog.csdn.net/zouxy09/article/details/24971995
 
 
 ### 对结巴分词的修改
-提取关键词，按原顺序返回
+自定义了MyTFID类，继承自TFIDF类，提取关键词，并按词原有的顺序返回关键词列表
 
 ```python
-def my_extract_tags(self, words, topK=20, withWeight=False, allowPOS=(), withFlag=False):
-    """
-    自定义的提取关键词的函数
-        - words: 词列表 []
-    """
-    freq = {}
-    for w in words:
-        if allowPOS:
-            if w.flag not in allowPOS:
+class MyTFIDF(jieba.analyse.TFIDF):
+
+    def my_extract_tags(self, words, topK=20, withWeight=False, allowPOS=(), withFlag=False):
+        """
+        自定义基于 tf-idf 提取关键词的函数，并按词的原顺序返回
+            - words: 词列表 []
+        """
+        freq = {}
+        for w in words:
+            if allowPOS:
+                if w.flag not in allowPOS:
+                    continue
+                elif not withFlag:
+                    w = w.word
+            wc = w.word if allowPOS and withFlag else w
+            if len(wc.strip()) < 2 or wc.lower() in self.stop_words:
                 continue
-            elif not withFlag:
-                w = w.word
-        wc = w.word if allowPOS and withFlag else w
-        if len(wc.strip()) < 2 or wc.lower() in self.stop_words:
-            continue
-        freq[w] = freq.get(w, 0.0) + 1.0
-    total = sum(freq.values())
-    for k in freq:
-        kw = k.word if allowPOS and withFlag else k
-        freq[k] *= self.idf_freq.get(kw, self.median_idf) / total
-    tags = sorted(freq, key=freq.__getitem__, reverse=True)
-    tags = tuple(tags[:topK])
-    tags1 = []
-    for w in words:
-        if w in tags and w not in tags1:
-            tags1.append(word)
-    return tags1
+            freq[w] = freq.get(w, 0.0) + 1.0
+        total = sum(freq.values())
+        for k in freq:
+            kw = k.word if allowPOS and withFlag else k
+            freq[k] *= self.idf_freq.get(kw, self.median_idf) / total
+        tags = sorted(freq, key=freq.__getitem__, reverse=True)
+        tags = tuple(tags[:topK])
+        tags1 = []
+        for w in words:
+            if w in tags and w not in tags1:
+                tags1.append(w)
+        return tags1
 ```
