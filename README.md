@@ -49,7 +49,7 @@ git config user.name ""
 git config user.email ""
 git pull origin master
 git push origin master
-```bash
+```
 
 ### 代码速度的处理
 - 2VModelManager: 　Doc2Vec，12个线程
