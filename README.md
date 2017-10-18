@@ -57,6 +57,38 @@ git push origin master
 - Doc2Words: 用了 2 * 12个线程
 
 ### 参考资料
-
 L0,L1,L2范数 http://blog.csdn.net/zouxy09/article/details/24971995
 
+
+### 对结巴分词的修改
+提取关键词，按原顺序返回
+
+```python
+def my_extract_tags(self, words, topK=20, withWeight=False, allowPOS=(), withFlag=False):
+    """
+    自定义的提取关键词的函数
+        - words: 词列表 []
+    """
+    freq = {}
+    for w in words:
+        if allowPOS:
+            if w.flag not in allowPOS:
+                continue
+            elif not withFlag:
+                w = w.word
+        wc = w.word if allowPOS and withFlag else w
+        if len(wc.strip()) < 2 or wc.lower() in self.stop_words:
+            continue
+        freq[w] = freq.get(w, 0.0) + 1.0
+    total = sum(freq.values())
+    for k in freq:
+        kw = k.word if allowPOS and withFlag else k
+        freq[k] *= self.idf_freq.get(kw, self.median_idf) / total
+    tags = sorted(freq, key=freq.__getitem__, reverse=True)
+    tags = tuple(tags[:topK])
+    tags1 = []
+    for w in words:
+        if w in tags and w not in tags1:
+            tags1.append(word)
+    return tags1
+```

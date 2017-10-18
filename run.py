@@ -29,15 +29,15 @@ doc2words.run([train_df, test_df])
 
 # 训练文档向量
 # save doc2vec model to disk
-d2vm = D2VModelManager()
-d2v = d2vm.train_model()
+# d2vm = D2VModelManager()
+# d2v = d2vm.train_model()
 
 # ---------------------------------------------------------------------------------
 
 # 训练词向量
 # save word2vec model to disk
-w2vm = W2VModelManager()
-w2v = w2vm.train_model()
+# w2vm = W2VModelManager()
+# w2v = w2vm.train_model()
 
 # ---------------------------------------------------------------------------------
 
@@ -54,29 +54,29 @@ w2v = w2vm.train_model()
 # ---------------------------------------------------------------------------------
 
 # get y_train X_train, X_test
-y_train = train_df.iloc[:]['label'].replace(['NEGATIVE', 'POSITIVE'], [0, 1])
-print(y_train.shape)
-
-X = np.array(d2v.docvecs)
-
-# maximum minimum scaling
-scaler = MinMaxScaler()
-scaler.fit(X)
-X = scaler.transform(X)
-
-# standard scaling
-# scaler = StandardScaler()
+# y_train = train_df.iloc[:]['label'].replace(['NEGATIVE', 'POSITIVE'], [0, 1])
+# print(y_train.shape)
+#
+# X = np.array(d2v.docvecs)
+#
+# # maximum minimum scaling
+# scaler = MinMaxScaler()
 # scaler.fit(X)
 # X = scaler.transform(X)
-
-X_train = X[:y_train.shape[0]]
-X_test = X[y_train.shape[0]:]
+#
+# # standard scaling
+# # scaler = StandardScaler()
+# # scaler.fit(X)
+# # X = scaler.transform(X)
+#
+# X_train = X[:y_train.shape[0]]
+# X_test = X[y_train.shape[0]:]
 
 # ----------------------------------------------------------------------------------
 
 # 机器学习 评估分类器 训练分类器 获取预测结果
-cm = ClassifierManager(X_train, y_train)
-cm.run()
+# cm = ClassifierManager(X_train, y_train)
+# cm.run()
 
 # for classifier in cm.classifiers:
 #     cm.get_predict_result(X_test, classifier, test_df, 'ml_'+classifier.classifier_name.split('.')[0]+'.csv')
@@ -84,6 +84,6 @@ cm.run()
 # ----------------------------------------------------------------------------------
 
 # CNN
-cnn.run(X_train, y_train)
+# cnn.run(X_train, y_train)
 
 
