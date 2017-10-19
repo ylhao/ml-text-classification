@@ -69,6 +69,7 @@ class Doc2Words:
         self.user_dict_file = cfg.DATA_PATH + 'user_dict.txt'  # 分词用的自定义词典
         self.stop_words_file = cfg.DATA_PATH + 'stop_words.txt'  # 停词表
         self.idf_file = cfg.DATA_PATH + 'idf.txt'  # idf文档
+        self.chi_file = cfg.DATA_PATH + 'chi.txt'  # chi文档
         self.train_words_file = cfg.DATA_PATH + 'train_words.csv'  # 训练集分词结果
         self.test_words_file = cfg.DATA_PATH + 'test_words.csv'  # 测试集分词结果
         self.train_words_pos_file = cfg.DATA_PATH + 'train_words_pos.csv'  # 训练集正样本分词结果
@@ -78,6 +79,8 @@ class Doc2Words:
         self.stop_words = [' ']
         self.words_idf = {}  # 统计该词的 idf
         self.words_chi = {}
+        self.pos = {}
+        self.neg = {}
 
     def set_stop_words(self):
         self.stop_words.extend([line.strip() for line in open(self.stop_words_file).readlines()])
@@ -192,19 +195,56 @@ class Doc2Words:
         print('extract train tags done')
 
     def chi(self, train_df=None):
-        """
-        CHI
-        """
-        pos = {}
-        neg = {}
         if not train_df:
             train_df = load_csv(self.train_words_file)
         total = train_df.shape[0]  # 文章总数
-        total_pos = train_df[train_df['label']=='POSITIVE'].shape[0]
-        total_neg = train_df[train_df['label']=='NEGATIVE'].shape[0]
+        total_pos = train_df[train_df['label'] == 'POSITIVE'].shape[0]
+        total_neg = train_df[train_df['label'] == 'NEGATIVE'].shape[0]
         print(total, total_pos, total_neg)
+
         time_str = datetime.datetime.now().isoformat()
         print('%s, CHI start' % time_str)
+
+        # 初始化词典
+        for w in self.pos:
+            self.words_chi[w] = 0
+            if w not in self.neg:
+                self.neg[w] = 0  # 负类没有该词
+        for w in self.neg:
+            if w not in self.words_chi:
+                self.words_chi[w] = 0
+                if w not in self.pos:
+                    self.pos[w] = 0  # 正类没有该词
+        # 计算每个词的 CHI
+        for w in self.words_chi:
+            A = self.pos[w]
+            C = total_pos - self.pos[w]
+            B = self.neg[w]
+            D = total_neg - self.neg[w]
+            self.words_chi[w] = (A * D - B * C) ** 2 / ((A + B) * (C + D))
+        # 按 CHI 排序
+        tags = sorted(self.words_chi, key=self.words_chi.__getitem__, reverse=True)
+        # 打印结束时间
+        time_str = datetime.datetime.now().isoformat()
+        print('%s, CHI done' % time_str)
+        # 写出结果
+        fw_chi = codecs.open(self.chi_file, 'w', encoding='utf-8')
+        for w in tags[:100000]:
+            try:
+                fw_chi.write('%s\n' % w)
+            except Exception:
+                pass
+
+    def pos_chi(self, train_df=None):
+
+        if not train_df:
+            train_df = load_csv(self.train_words_file)
+        train_df = train_df[train_df['label']=='POSITIVE']
+
+        # 打印开始时间
+        time_str = datetime.datetime.now().isoformat()
+        print('%s, CHI pos start' % time_str)
+
         for n in range(train_df.shape[0]):  # 遍历行
             words = []
             try:
@@ -217,60 +257,60 @@ class Doc2Words:
                 print('%s content is nan' % n)
             done = {}  # 该行已经统计过的词
             for w in words:  # 遍历词
-                if train_df.iloc[n]['label'] == 'POSITIVE':
-                    if w not in done:  # n 行没有统计过 w 词
-                        done[w] = True
-                        if w not in pos:
-                            pos[w] = 1
-                        else:
-                            pos[w] += 1
+                if w not in done:  # n 行没有统计过 w 词
+                    done[w] = True
+                    if w not in self.pos:
+                        self.pos[w] = 1
                     else:
-                        continue
-                elif train_df.iloc[n]['label'] == 'NEGATIVE':
-                    if w not in done:
-                        done[w] = True
-                        if w not in neg:
-                            neg[w] = 1
-                        else:
-                            neg[w] += 1
-                    else:
-                        continue
+                        self.pos[w] += 1
+                else:
+                    continue
+            # 跟踪进度
             if (n + 1) % 10000 == 0:
                 time_str = datetime.datetime.now().isoformat()
                 print('%s, %s line done' % (time_str, n+1))
-        # print(pos)
-        # print(neg)
-        # 初始化词典
-        for w in pos:
-            self.words_chi[w] = 0
-            if w not in neg:
-                neg[w] = 0  # 负类没有该词
-        for w in neg:
-            if w not in self.words_chi:
-                self.words_chi[w] = 0
-                if w not in pos:
-                    pos[w] = 0  # 正类没有该词
 
-        for w in self.words_chi:
-            self.words_chi[w] = (pos[w] * (total_neg - neg[w]) - neg[w] * (total_pos - pos[w])) ** 2 / (pos[w] + neg[w])(total_pos - pos[w])(total_neg - neg[w])
-        tags = sorted(self.words_chi, key=self.words_chi.__getitem__, reverse=True)
-        print(tags[:50])
-
+        # 打印完成时间
         time_str = datetime.datetime.now().isoformat()
-        print('%s, CHI done' % time_str)
-        # pos_arr = list(pos.items())
-        # neg_arr = list(neg.items())
-        # pos_df = pd.DataFrame(pos_arr)
-        # neg_df = pd.DataFrame(neg_arr)
-        # pos_table = pd.crosstab(index=pos_df[0], columns='count')
-        # neg_table = pd.crosstab(index=neg_df[0], columns='count')
-        # observed = neg_table
-        # pos_ratios = pos_table/len(pos_df)
-        # expected = pos_ratios * len(neg_df)
-        # chi_squared_stat = (((observed-expected)**2)/expected).sum()
-        # print(chi_squared_stat)
+        print('%s, CHI pos done' % time_str)
 
+    def neg_chi(self, train_df=None):
 
+        if not train_df:
+            train_df = load_csv(self.train_words_file)
+        train_df = train_df[train_df['label'] == 'NEGATIVE']
+
+        # 打印开始时间
+        time_str = datetime.datetime.now().isoformat()
+        print('%s, CHI neg start' % time_str)
+
+        for n in range(train_df.shape[0]):  # 遍历行
+            words = []
+            try:
+                words.extend(train_df.iloc[n]['head'].split())
+            except Exception:
+                print('%s head is nan' % n)
+            try:
+                words.extend(train_df.iloc[n]['content'].split())
+            except Exception:
+                print('%s content is nan' % n)
+            done = {}  # 该行已经统计过的词
+            for w in words:  # 遍历词
+                if w not in done:  # n 行没有统计过 w 词
+                    done[w] = True
+                    if w not in self.neg:
+                        self.neg[w] = 1
+                    else:
+                        self.neg[w] += 1
+                else:
+                    continue
+            # 跟踪进度
+            if (n + 1) % 10000 == 0:
+                time_str = datetime.datetime.now().isoformat()
+                print('%s, %s line done' % (time_str, n+1))
+        # 打印结束时间
+        time_str = datetime.datetime.now().isoformat()
+        print('%s, CHI neg done' % time_str)
 
     def extract_pos_sample(self):
         train_df = load_csv(self.train_words_file)
@@ -296,18 +336,27 @@ class Doc2Words:
         #     t.join()
         # print('-' * 120)
 
-        # self.idf(df_list)
-        # print('-' * 120)
-        #
-        # self.set_idf_dict()
-        # print('-' * 120)
+        self.idf(df_list)
+        print('-' * 120)
 
-        # self.extract_train_tags(head_topK=6, content_topK=250)
-        # print('-' * 120)
+        self.set_idf_dict()
+        print('-' * 120)
+
+        self.extract_train_tags(head_topK=6, content_topK=50)
+        print('-' * 120)
 
         # self.extract_pos_sample()
         # print('-' * 120)
-        self.chi()
+
+        # ts = [threading.Thread(target=self.pos_chi, args=()),
+        #       threading.Thread(target=self.neg_chi, args=())]
+        # for t in ts:
+        #     t.start()
+        # for t in ts:
+        #     t.join()
+        # print('-' * 120)
+        #
+        # self.chi()
 
 
 class MyTFIDF(jieba.analyse.TFIDF):
