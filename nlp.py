@@ -71,14 +71,13 @@ class Doc2Words:
         self.idf_file = cfg.DATA_PATH + 'idf.txt'  # idf文档
         self.train_words_file = cfg.DATA_PATH + 'train_words.csv'  # 训练集分词结果
         self.test_words_file = cfg.DATA_PATH + 'test_words.csv'  # 测试集分词结果
-        self.train_words_pos_file = cfg.DATA_PATH + 'train_words_pos_file.csv'  # 训练集正样本分词结果
+        self.train_words_pos_file = cfg.DATA_PATH + 'train_words_pos.csv'  # 训练集正样本分词结果
         self.train_tags_pos_file = cfg.DATA_PATH + 'train_tags_pos.csv'  # 训练集正样本关键词提取结果
         self.train_tags_neg_file = cfg.DATA_PATH + 'train_tags_neg.csv'  # 训练集负样本关键词提取结果
         self.test_tags_file = cfg.DATA_PATH + 'test_tags.csv'  # 测试集关键词提取结果
         self.stop_words = [' ']
         self.words_idf = {}  # 统计该词的 idf
-        self.pos = {}
-        self.neg = {}
+        self.words_chi = {}
 
     def set_stop_words(self):
         self.stop_words.extend([line.strip() for line in open(self.stop_words_file).readlines()])
@@ -169,15 +168,15 @@ class Doc2Words:
         fw_pos = codecs.open(self.train_tags_pos_file, 'w', encoding='utf-8')
         fw_neg = codecs.open(self.train_tags_neg_file, 'w', encoding='utf-8')
         for n in range(train_df.shape[0]):
+            tags_head = []
+            tags_content = []
             try:
-                tags_head = []
                 tags_head = analyse.my_extract_tags(train_df.iloc[n]['head'].split(), topK=head_topK)
             except Exception:
                 print('%s head is nan' % n)
             while len(tags_head) < head_topK:
                 tags_head.append('<PAD>')
             try:
-                tags_content = []
                 tags_content = analyse.my_extract_tags(train_df.iloc[n]['content'].split(), topK=content_topK)
             except Exception:
                 print('%s content is nan' % n)
@@ -196,44 +195,71 @@ class Doc2Words:
         """
         CHI
         """
+        pos = {}
+        neg = {}
         if not train_df:
             train_df = load_csv(self.train_words_file)
-
+        total = train_df.shape[0]  # 文章总数
+        total_pos = train_df[train_df['label']=='POSITIVE'].shape[0]
+        total_neg = train_df[train_df['label']=='NEGATIVE'].shape[0]
+        print(total, total_pos, total_neg)
         time_str = datetime.datetime.now().isoformat()
         print('%s, CHI start' % time_str)
         for n in range(train_df.shape[0]):  # 遍历行
             words = []
-            words.extend(train_df.iloc[n]['head'].split())
-            words.extend(train_df.iloc[n]['content'].split())
+            try:
+                words.extend(train_df.iloc[n]['head'].split())
+            except Exception:
+                print('%s head is nan' % n)
+            try:
+                words.extend(train_df.iloc[n]['content'].split())
+            except Exception:
+                print('%s content is nan' % n)
             done = {}  # 该行已经统计过的词
             for w in words:  # 遍历词
                 if train_df.iloc[n]['label'] == 'POSITIVE':
                     if w not in done:  # n 行没有统计过 w 词
                         done[w] = True
-                        if w not in self.pos:
-                            self.pos[w] = 1
+                        if w not in pos:
+                            pos[w] = 1
                         else:
-                            self.pos[w] += 1
+                            pos[w] += 1
                     else:
                         continue
                 elif train_df.iloc[n]['label'] == 'NEGATIVE':
                     if w not in done:
                         done[w] = True
-                        if w not in self.neg:
-                            self.neg[w] = 1
+                        if w not in neg:
+                            neg[w] = 1
                         else:
-                            self.neg[w] += 1
+                            neg[w] += 1
                     else:
                         continue
-            if n % 10000 == 0:
+            if (n + 1) % 10000 == 0:
                 time_str = datetime.datetime.now().isoformat()
-                print('%s, %s line done' % (time_str, n))
-        print(self.pos)
-        print(self.neg)
+                print('%s, %s line done' % (time_str, n+1))
+        # print(pos)
+        # print(neg)
+        # 初始化词典
+        for w in pos:
+            self.words_chi[w] = 0
+            if w not in neg:
+                neg[w] = 0  # 负类没有该词
+        for w in neg:
+            if w not in self.words_chi:
+                self.words_chi[w] = 0
+                if w not in pos:
+                    pos[w] = 0  # 正类没有该词
+
+        for w in self.words_chi:
+            self.words_chi[w] = (pos[w] * (total_neg - neg[w]) - neg[w] * (total_pos - pos[w])) ** 2 / (pos[w] + neg[w])(total_pos - pos[w])(total_neg - neg[w])
+        tags = sorted(self.words_chi, key=self.words_chi.__getitem__, reverse=True)
+        print(tags[:50])
+
         time_str = datetime.datetime.now().isoformat()
         print('%s, CHI done' % time_str)
-        # pos_arr = list(self.pos.items())
-        # neg_arr = list(self.neg.items())
+        # pos_arr = list(pos.items())
+        # neg_arr = list(neg.items())
         # pos_df = pd.DataFrame(pos_arr)
         # neg_df = pd.DataFrame(neg_arr)
         # pos_table = pd.crosstab(index=pos_df[0], columns='count')
@@ -249,7 +275,7 @@ class Doc2Words:
     def extract_pos_sample(self):
         train_df = load_csv(self.train_words_file)
         train_df[train_df['label'] == 'POSITIVE'].to_csv(
-            self.train_tags_pos_file,
+            self.train_words_pos_file,
             sep='\t', header=None, index=None, encoding='utf8'
         )
 
