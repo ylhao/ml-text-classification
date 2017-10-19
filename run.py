@@ -6,35 +6,50 @@ from sklearn.preprocessing import StandardScaler
 import cfg
 import numpy as np
 from ml import ClassifierManager
-from nlp import DataHelper
-from nlp import Doc2Words
+from nlp import DataHelper, Words
 import cnn
 from word2vec import W2VModelManager
 import pandas as pd
+import jieba
+from chi import CHI
+from idf import IDF
 
 # ----------------------------------------------------------------------------------
 
 # 预处理
-p = DataHelper()
-train_df, test_df = p.run()
+dh = DataHelper()
+train_df, test_df = dh.clean_df()
 
 # ----------------------------------------------------------------------------------
 
-# 分词
-# save test_words.csv and train_words.csv to disk
-doc2words = Doc2Words()
-doc2words.run([train_df, test_df])
+# 分词 -> train_words.csv test_words.csv
+words = Words()
+words.set_user_dict()
+words.set_stop_words()
+jieba.enable_parallel(4)  # 并行分词
+words.cut_sens([train_df, test_df])  # 分词
+
+# CHI -> chi.txt
+chi = CHI()
+chi.run()
+
+# IDF -> idf.txt
+idf = IDF()
+idf.run()
+
+# 提取关键词 -> trian_tags_pos.csv train_tags_neg.csv
+words.set_idf_dict()  # 使用自定义 idf 文档
+words.extract_train_tags(head_topK=6, content_topK=50)
 
 # ----------------------------------------------------------------------------------
 
-# 训练文档向量
-# save doc2vec model to disk
+# 训练文档向量 -> dm.d2v
 # d2vm = D2VModelManager()
 # d2v = d2vm.train_model()
 
 # ---------------------------------------------------------------------------------
 
-# 训练词向量
+# 训练词向量 -> sg.w2v
 # save word2vec model to disk
 # w2vm = W2VModelManager()
 # w2v = w2vm.train_model()
