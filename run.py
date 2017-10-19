@@ -36,8 +36,8 @@ doc2words.run([train_df, test_df])
 
 # 训练词向量
 # save word2vec model to disk
-w2vm = W2VModelManager()
-w2v = w2vm.train_model()
+# w2vm = W2VModelManager()
+# w2v = w2vm.train_model()
 
 # ---------------------------------------------------------------------------------
 

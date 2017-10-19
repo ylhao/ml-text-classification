@@ -5,31 +5,36 @@ import cfg
 from gensim.models import Doc2Vec
 from gensim.models.doc2vec import LabeledSentence
 import datetime
+from nlp import load_csv
 
 
 class DocList(object):
     """
     文档迭代器
     """
-    def __init__(self, filename_list):
-        self.filename_list = filename_list
+    def __init__(self, df_list=None):
+        train_words_file = cfg.DATA_PATH + 'train_words.csv'
+        test_words_file = cfg.DATA_PATH + 'test_words.csv'
+        if not df_list:
+            self.df_list = [load_csv(train_words_file), load_csv(test_words_file)]
 
     def __iter__(self):
-        for filename in self.filename_list:
-            for line_num, line in enumerate(codecs.open(filename, encoding='utf8')):
+        tag = ['Train', 'Test']
+        for i, df in enumerate(self.df_list):
+            for line_num in range(df.shape[0]):
                 if (line_num + 1) % 50000 == 0:
                     time_str = datetime.datetime.now().isoformat()
-                    print('%s, %s done' % (time_str, line_num + 1))
-                line = line.strip().split('\t')
+                    print('%s, iter %s done' % (time_str, line_num + 1))
                 words = []
-                words.extend(line[1].split())
-                words.extend(line[2].split())
-                if 'train_' in filename:
-                    yield LabeledSentence(words, ['TRAIN_%s' % (line[0])])
-                elif 'test_' in filename:
-                    yield LabeledSentence(words, ['TEST_%s' % line[0]])
-                else:
-                    print('文件名有误')
+                try:
+                    words.extend(df.iloc[line_num]['head'].split())
+                except Exception:
+                    print("line num %s head is nan" % line_num)
+                try:
+                    words.extend(df.iloc[line_num]['content'].split())
+                except Exception:
+                    print("line num %s content is nan" % line_num)
+                yield LabeledSentence(words, ['%s_%s' % (tag[i], words)])
 
 
 class D2VModelManager:
@@ -37,8 +42,6 @@ class D2VModelManager:
     Doc2Vec 模型管理器
     """
     def __init__(self):
-        self.train_words_file = cfg.DATA_PATH + 'train_words.csv'
-        self.test_words_file = cfg.DATA_PATH + 'test_words.csv'
         self.dm_model_name = cfg.MODEL_PATH + 'dm.d2v'
 
     def train_model(self):
@@ -46,7 +49,7 @@ class D2VModelManager:
         训练 doc2vec model
         :return: doc2vec model
         """
-        doc_l = DocList([self.train_words_file, self.test_words_file])
+        doc_l = DocList()
         d2v = Doc2Vec(dm=1, size=300, negative=5, hs=1, sample=1e-5,
                       window=10, min_count=5, workers=12, alpha=0.025, min_alpha=0.025)
         d2v.build_vocab(doc_l)

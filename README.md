@@ -100,3 +100,22 @@ class MyTFIDF(jieba.analyse.TFIDF):
                 tags1.append(w)
         return tags1
 ```
+
+### 命名规则
+1. 加后缀p的代表路径
+2. 加df后缀的是数据框
+3. 在stop_words.txt中添加一个空格，独占一行
+
+### 特殊处理
+
+```python
+class DataHelper:
+    def __init__(self):
+        self.train_df = load_csv(cfg.DATA_PATH + 'train.tsv')
+        self.test_df = load_csv(cfg.DATA_PATH + 'evalution_public.tsv')
+        self.test_df['label'] = 'POSITIVE'  # 统一格式，便于后续处理数据
+```
+
+### 文件操作
+
+写出的文件全用utf-8编码
