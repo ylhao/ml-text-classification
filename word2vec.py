@@ -5,7 +5,7 @@ import cfg
 from gensim.models import Word2Vec
 import time
 import datetime
-from nlp import load_csv
+from data_helpers import load_csv
 
 
 class MySentences(object):
@@ -16,9 +16,9 @@ class MySentences(object):
         """
         :param filename_list: 文件名列表 
         """
-        train_words_file = cfg.DATA_PATH + 'train_words.csv'
-        test_words_file = cfg.DATA_PATH + 'test_words.csv'
-        train_words_file_pos = cfg.DATA_PATH + 'train_words_pos.csv'
+        train_words_file = 'train_words.csv'
+        test_words_file = 'test_words.csv'
+        train_words_file_pos = 'train_words_pos.csv'
         if not df_list:
             self.df_list = [load_csv(train_words_file), load_csv(test_words_file)]
             # self.df_list = [load_csv(train_words_file_pos)]
@@ -32,11 +32,11 @@ class MySentences(object):
                 words = []
                 try:
                     words.extend(df.iloc[line_num]['head'].split())
-                except Exception:
+                except:
                     print("line num %s head is nan" % line_num)
                 try:
                     words.extend(df.iloc[line_num]['content'].split())
-                except Exception:
+                except:
                     print("line num %s content is nan" % line_num)
                 yield words
 
@@ -71,6 +71,7 @@ class W2VModelManager:
 
 
 # model = W2VModelManager.load_model('sg.w2v')
+
 # # print(model.most_similar(positive=['经济', '消防'], negative=['救援'], topn=1))
 # for w in (model.most_similar(positive=['经济'], topn=10)):
 #     print(w)

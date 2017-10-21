@@ -1,11 +1,10 @@
 # coding: utf-8
 
-import codecs
 import cfg
 from gensim.models import Doc2Vec
 from gensim.models.doc2vec import LabeledSentence
 import datetime
-from nlp import load_csv
+from data_helpers import load_csv
 
 
 class DocList(object):
@@ -13,8 +12,8 @@ class DocList(object):
     文档迭代器
     """
     def __init__(self, df_list=None):
-        train_words_file = cfg.DATA_PATH + 'train_words.csv'
-        test_words_file = cfg.DATA_PATH + 'test_words.csv'
+        train_words_file = 'train_words.csv'
+        test_words_file = 'test_words.csv'
         if not df_list:
             self.df_list = [load_csv(train_words_file), load_csv(test_words_file)]
 
@@ -28,11 +27,11 @@ class DocList(object):
                 words = []
                 try:
                     words.extend(df.iloc[line_num]['head'].split())
-                except Exception:
+                except:
                     print("line num %s head is nan" % line_num)
                 try:
                     words.extend(df.iloc[line_num]['content'].split())
-                except Exception:
+                except:
                     print("line num %s content is nan" % line_num)
                 yield LabeledSentence(words, ['%s_%s' % (tag[i], words)])
 

@@ -192,12 +192,12 @@ class ClassifierManager:
     """
     def __init__(self, X, y):
         self.classifiers = [
-            RFClassifier(X, y, 10000, 'rf.model'),
+            # RFClassifier(X, y, 20000, 'rf.model'),
             LinearClassifier(X, y, 20000, 'linear.model'),
             # MNBClassifier(X, y, 20000, 'mnb.model'),
-            LRClassifier(X, y, 20000, 'lr.model'),
-            KNNClassifier(X, y, 10000, 'knn.model'),
-            SVCClassifier(X, y, 6000, 'svc.model'),
+            # LRClassifier(X, y, 20000, 'lr.model'),
+            # KNNClassifier(X, y, 20000, 'knn.model'),
+            # SVCClassifier(X, y, 20000, 'svc.model'),
         ]
 
     def run(self):

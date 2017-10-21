@@ -1,19 +1,18 @@
 # coding: utf-8
 
+import re
 import os
 
-DATA_PATH = '../data/'
-MODEL_PATH = '../model/'
-RESULT_PATH = '../result/'
-CLASSIFIER_PATH = '../classifier/'
-LOG_PATH_CNN = '../logs/cnn/'
-LOG_PATH_TEXTCNN = '../logs/text_cnn/'
 
+ROOT_PATH = re.match(r'\S+360',  os.getcwd()).group()
+
+DATA_PATH = ROOT_PATH + '/data/'  # 所有数据
+MODEL_PATH = ROOT_PATH + '/model/'  # 所有模型
+RESULT_PATH = ROOT_PATH + '/result/'  # 所有结果
+CLASSIFIER_PATH = ROOT_PATH + '/classifier/'  # 机器学习算法得到的所有分类器
+TEXT_CNN_PATH = ROOT_PATH + '/model/text-cnn/'  # 所有模型
 
 def mkdir(path):
-    """
-    make directory
-    """
     if not os.path.exists(path):
         os.makedirs(path)
 
@@ -22,5 +21,4 @@ mkdir(DATA_PATH)
 mkdir(MODEL_PATH)
 mkdir(RESULT_PATH)
 mkdir(CLASSIFIER_PATH)
-mkdir(LOG_PATH_CNN)
-mkdir(LOG_PATH_TEXTCNN)
+mkdir(TEXT_CNN_PATH)
