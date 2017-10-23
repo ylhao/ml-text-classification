@@ -125,3 +125,57 @@ class DataHelper:
 各个标点的数目
 数字的数目
 一些特殊的字符的数目
+
+
+### 小范围随机打乱
+# 小范围打乱数据 首先根据 y_train 的尺寸得到新的一个随机顺序
+            # ri = np.random.permutation(len(y_train))
+            # X_train = X_train[ri]
+            # y_train = y_train[ri]
+
+
+###
+大量英文
+网页格式
+{}不匹配
+{}内有中文
+文章太短
+文章前后有重复的话
+有重复的文章
+文章开头不是正常字符
+<feff>
+
+
+不去单字
+
+2227
+3791
+
+text-decoration
+none
+outline
+display
+box-sizing
+height
+solid
+border
+padding
+px
+width
+top
+right
+left
+font
+hred
+hover
+content
+block
+position
+absolute
+hidden
+top
+background
+block
+pgc-card
+class
+public

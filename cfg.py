@@ -10,7 +10,8 @@ DATA_PATH = ROOT_PATH + '/data/'  # 所有数据
 MODEL_PATH = ROOT_PATH + '/model/'  # 所有模型
 RESULT_PATH = ROOT_PATH + '/result/'  # 所有结果
 CLASSIFIER_PATH = ROOT_PATH + '/classifier/'  # 机器学习算法得到的所有分类器
-TEXT_CNN_PATH = ROOT_PATH + '/model/text-cnn/'  # 所有模型
+TEXT_CNN_PATH = ROOT_PATH + '/model/text-cnn/'
+
 
 def mkdir(path):
     if not os.path.exists(path):

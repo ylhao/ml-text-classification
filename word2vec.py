@@ -1,9 +1,7 @@
 # coding: utf-8
 
-import codecs
 import cfg
 from gensim.models import Word2Vec
-import time
 import datetime
 from data_helpers import load_csv
 
@@ -16,12 +14,10 @@ class MySentences(object):
         """
         :param filename_list: 文件名列表 
         """
-        train_words_file = 'train_words.csv'
-        test_words_file = 'test_words.csv'
-        train_words_file_pos = 'train_words_pos.csv'
+        train_words_file = cfg.DATA_PATH + 'train_new.csv'
+        test_words_file = cfg.DATA_PATH + 'test_new.csv'
         if not df_list:
             self.df_list = [load_csv(train_words_file), load_csv(test_words_file)]
-            # self.df_list = [load_csv(train_words_file_pos)]
 
     def __iter__(self):
         for df in self.df_list:
@@ -46,8 +42,6 @@ class W2VModelManager:
     Word2Vec 模型管理器
     """
     def __init__(self):
-
-
         self.model_name = cfg.MODEL_PATH + 'sg.w2v'  # sg=1
 
     def train_model(self):
@@ -67,48 +61,49 @@ class W2VModelManager:
         :param model_name: word2vec model name
         :return: word2vec model
         """
-        return Word2Vec.load(cfg.MODEL_PATH + model_name)
+        return Word2Vec.load(model_name)
 
-
-# model = W2VModelManager.load_model('sg.w2v')
-
-# # print(model.most_similar(positive=['经济', '消防'], negative=['救援'], topn=1))
-# for w in (model.most_similar(positive=['经济'], topn=10)):
-#     print(w)
-# print('-'*60)
-#
-# for w in (model.most_similar(positive=['酒'], topn=10)):
-#     print(w)
-# print('-'*60)
-#
-# for w in (model.most_similar(positive=['消防'], topn=10)):
-#     print(w)
-# print('-'*60)
-#
-# for w in (model.most_similar(positive=['法律'], topn=10)):
-#     print(w)
-# print('-'*60)
-#
-# for w in (model.most_similar(positive=['社会'], topn=10)):
-#     print(w)
-# print('-'*60)
-#
-# for w in (model.most_similar(positive=['股票'], topn=10)):
-#     print(w)
-# print('-'*60)
-#
-# for w in (model.most_similar(positive=['马化腾'], topn=10)):
-#     print(w)
-# print('-'*60)
-#
-# for w in (model.most_similar(positive=['手机'], topn=10)):
-#     print(w)
-# print('-'*60)
-#
-# for w in (model.most_similar(positive=['交通'], topn=10)):
-#     print(w)
-# print('-'*60)
-# print(model['经济'])
+    @staticmethod
+    def model_test(model_name):
+        model = W2VModelManager.load_model(model_name)
+        for w in (model.most_similar(positive=['经济'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['{'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['酒'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['年'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['点'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['分'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['月'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['法律'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['社会'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['股票'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['手机'], topn=10)):
+            print(w)
+        print('-'*60)
+        for w in (model.most_similar(positive=['交通'], topn=10)):
+            print(w)
+        print('-'*60)
+        print(model['经济'])
+        print(model['的'])
 
 
 

@@ -18,12 +18,12 @@ class IDF:
 
     def __init__(self, df_list=None):
 
-        self.idf_file = 'idf.txt'  # idf文档
+        self.idf_file = cfg.DATA_PATH + 'idf.txt'  # idf文档
         self.idf = {}  # 统计该词的 idf
 
         self.df_list = df_list
         if not df_list:
-            self.df_list = [load_csv('train_words.csv'), load_csv('test_words.csv')]
+            self.df_list = [load_csv(cfg.DATA_PATH + 'train_words.csv'), load_csv(cfg.DATA_PATH + 'test_words.csv')]
 
     def compute_idf(self):
         total_num = 0  # 文章总数
@@ -67,9 +67,9 @@ class CHI:
 
     def __init__(self, train_df=None):
 
-        # self.train_words_file = 'train_words.csv'
-        self.train_words_file = 'train_tags.csv'
-        self.chi_file = 'chi.txt'
+        # self.train_words_file = cfg.DATA_PATH + 'train_words.csv'
+        self.train_words_file = cfg.DATA_PATH + 'train_tags.csv'
+        self.chi_file = cfg.DATA_PATH + 'chi.txt'
         self.chi = {}
         self.pos = {}
         self.neg = {}
@@ -176,11 +176,13 @@ class TFIDF:
 
     def __init__(self):
 
-        self.train_tags_pos_file = 'train_tags_pos.csv'
-        self.train_tags_neg_file = 'train_tags_neg.csv'
-        self.train_tags_file = 'train_tags.csv'
-        self.test_tags_file = 'test_tags.csv'
-
+        self.train_tags_pos_file = cfg.DATA_PATH + 'train_tags_pos.csv'
+        self.train_tags_neg_file = cfg.DATA_PATH + 'train_tags_neg.csv'
+        self.train_tags_file = cfg.DATA_PATH + 'train_tags.csv'
+        self.test_tags_file = cfg.DATA_PATH + 'test_tags.csv'
+        self.train_words_clean_file = cfg.DATA_PATH + 'train_words_clean.csv'
+        self.test_words_clean_file = cfg.DATA_PATH + 'test_words_clean.csv'
+        self.tags_file_list = [self.train_tags_file, self.test_tags_file]
         self.stop_words = {}
         self.idf = {}
 
@@ -212,7 +214,8 @@ class TFIDF:
         tags = sorted(freq, key=freq.__getitem__, reverse=True)
         tags = tuple(tags[:topK])
         for w in words:
-            if w in tags and w not in rtags:  # 保证一个词只返回一次
+            # if w in tags and w not in rtags:  # 保证一个词只返回一次
+            if w in tags: # 不保证每个词只返回一次
                 rtags.append(w)
         return rtags
 
@@ -222,28 +225,29 @@ class TFIDF:
         :param train_df: 训练集数据框
         :param head_topK: 要从标题中提取的关键词数
         :param content_topK: 要从内容中提取的关键词数
+            -> train_tags_pos.csv train_tags_neg.csv 
         """
         if TF:
             for w in self.idf:
                 self.idf[w] = 1
         if not train_df:
-            train_df = load_csv('train_words.csv')
+            train_df = load_csv(self.train_words_clean_file)
         fw_pos = codecs.open(self.train_tags_pos_file, 'w', encoding='utf-8')
         fw_neg = codecs.open(self.train_tags_neg_file, 'w', encoding='utf-8')
         for n in range(train_df.shape[0]):
             tags_head = []
             tags_content = []
             try:
-                tags_head = self.extract_tags(train_df.iloc[n]['head'].split(),
-                                              topK=head_topK,
-                                              withWeight=withWeight)
+                tags_head.extend(self.extract_tags(train_df.iloc[n]['head'].split(),
+                                          topK=head_topK,
+                                          withWeight=withWeight))
             except:
                 print('%s head is nan' % n)
             while len(tags_head) < head_topK: tags_head.append('<PAD_HEAD>')
             try:
-                tags_content = self.extract_tags(train_df.iloc[n]['content'].split(),
-                                                 topK=content_topK,
-                                                 withWeight=withWeight)
+                tags_content.extend(self.extract_tags(train_df.iloc[n]['content'].split(),
+                                                      topK=content_topK,
+                                                      withWeight=withWeight))
             except:
                 print('%s content is nan' % n)
             while len(tags_content) < content_topK: tags_content.append('<PAD_CONTENT>')
@@ -257,15 +261,15 @@ class TFIDF:
         fw_neg.close()
         print('extract train tags done')
 
+
     def extract_tags_all(self, df_list=None, head_topK=6, content_topK=100, TF=False, withWeight=False):
         if not df_list:
-            # df_list = [load_csv('train_words.csv'), load_csv('test_words.csv')]
-            df_list = [load_csv('train_words.csv')]
-        for df in df_list:
+            df_list = [load_csv(self.train_words_clean_file), load_csv(self.test_words_clean_file)]
+        for i, df in enumerate(df_list):
             if TF:
                 for w in self.idf:
                     self.idf[w] = 1
-            fw = codecs.open(self.train_tags_file, 'w', encoding='utf-8')
+            fw = codecs.open(self.tags_file_list[i], 'w', encoding='utf-8')
             for n in range(df.shape[0]):
                 tags_head = []
                 tags_content = []
