@@ -61,7 +61,7 @@ words = Words()
 # 加载 word2vec 模型
 w2vm = W2VModelManager()
 w2v = w2vm.load_model(cfg.MODEL_PATH + 'sg.w2v')
-w2vm.model_name(cfg.MODEL_PATH + 'sg.w2v')
+w2vm.model_test(cfg.MODEL_PATH + 'sg.w2v')
 
 # scaler = StandardScaler()
 # scaler.fit(X_train)
