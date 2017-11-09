@@ -11,24 +11,27 @@ from data_helpers import load_csv
 from source.text_cnn.text_cnn import TextCNN
 
 # 参数
-tf.flags.DEFINE_float('dev_sample_percentage', .2, '验证集比例')
-tf.flags.DEFINE_string('train_words_file', cfg.DATA_PATH + 'train_new.csv', '训练集词列表文件')
+tf.flags.DEFINE_float('dev_sample_percentage', .005, '验证集比例')
+tf.flags.DEFINE_string('train_words_file', cfg.DATA_PATH + 'train_words_clean.csv', '训练集词列表文件')
 tf.flags.DEFINE_string('w2v_model', cfg.MODEL_PATH + 'word2vec_model/' + 'sg.w2v', 'word2vec 模型')
 
 tf.flags.DEFINE_integer('num_classes', 2, '类别数')
-tf.flags.DEFINE_integer('sequence_length', 400, '每篇文章的词数')
+tf.flags.DEFINE_integer('sequence_length', 256, '每篇文章的词数')
 tf.flags.DEFINE_integer('embedding_size', 200, '词向量维度')
-tf.flags.DEFINE_string('filter_sizes', '3,4,5', "过滤器尺寸")
-tf.flags.DEFINE_integer('num_filters', 128, '每种尺寸过滤器数目')
+tf.flags.DEFINE_string('filter_sizes', '2,3,4,5,6,7,8', "过滤器尺寸")
+tf.flags.DEFINE_integer('num_filters', 256, '每种尺寸过滤器数目')
 tf.flags.DEFINE_float('dropout_keep_prob', 0.5, 'Dropout keep probability')
 tf.flags.DEFINE_float('l2_reg_lambda', 0.0, 'L2 regularization lambda')
-tf.flags.DEFINE_float('learning_rate', 1e-4, 'learning rate')
+tf.flags.DEFINE_float('learning_rate', 0.0005, 'learning rate')
 
-tf.flags.DEFINE_integer('batch_size', 64, 'Train Batch Size')
-tf.flags.DEFINE_integer('evl_batch_size', 64, 'Evl Batch Size')
+tf.app.flags.DEFINE_integer("decay_steps", 6000, "how many steps before decay learning rate.")
+tf.app.flags.DEFINE_float("decay_rate", 0.65, "Rate of decay for learning rate.")
+
+tf.flags.DEFINE_integer('batch_size', 32, 'Train Batch Size')
+tf.flags.DEFINE_integer('evl_batch_size', 256, 'Evl Batch Size')
 tf.flags.DEFINE_integer('num_epochs', 200, 'epoch')
-tf.flags.DEFINE_integer('evaluate_every', 100, '评测模型的步数节点')
-tf.flags.DEFINE_integer('checkpoint_every', 100, '保存模型的步数节点')
+tf.flags.DEFINE_integer('evaluate_every', 300, '评测模型的步数节点')
+tf.flags.DEFINE_integer('checkpoint_every', 300, '保存模型的步数节点')
 tf.flags.DEFINE_integer('num_checkpoints', 5, 'Number of checkpoints to store')
 
 # Misc Parameters
@@ -43,7 +46,7 @@ for attr, value in sorted(FLAGS.__flags.items()):
 print('='*120)
 
 
-words_df = load_csv(FLAGS.train_words_file)[:10000]
+words_df = load_csv(FLAGS.train_words_file)[:200000]
 words_df = words_df.sample(frac=1)  # 打乱
 TRAIN_WORDS_DF = words_df[0:int(words_df.shape[0] * (1 - FLAGS.dev_sample_percentage))]
 EVL_WORDS_DF = words_df[int(words_df.shape[0] * (1 - FLAGS.dev_sample_percentage)):]
@@ -53,7 +56,7 @@ print('测试集样例数：', EVL_WORDS_DF.shape[0])
 print('='*120)
 
 w2vm = W2VModelManager()
-w2v = w2vm.load_model(FLAGS.w2v_model)
+w2v = w2vm.load_model()
 print('word2vec 模型信息：', w2v)
 
 
@@ -99,7 +102,7 @@ def evl_batch_iter(evl_words_df):
     num_batches = int((data_size - 1) / FLAGS.evl_batch_size) + 1
     print('验证集样例数:', data_size)
     print('验证集 batch 数:', num_batches)
-    evl_words_df = evl_words_df.sample(frac=1)
+    # evl_words_df = evl_words_df.sample(frac=1)
     for batch_num in range(num_batches):
         start_index = batch_num * FLAGS.evl_batch_size
         end_index = min((batch_num + 1) * FLAGS.evl_batch_size, data_size)
@@ -128,8 +131,6 @@ def evl_batch_iter(evl_words_df):
         y_evl = np.array(y).reshape(-1, 2)
         yield X_evl, y_evl
 
-# 训练
-# ====================================================================================================
 with tf.Graph().as_default():
     session_conf = tf.ConfigProto(
       allow_soft_placement=FLAGS.allow_soft_placement,
@@ -200,7 +201,6 @@ with tf.Graph().as_default():
                 [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy],
                 feed_dict,
             )
-            # step = sess.run(train_op)
             time_str = datetime.datetime.now().isoformat()
             print('{}: step {}, loss {:g}, acc {:g}'.format(time_str, step, loss, accuracy))
             train_summary_writer.add_summary(summaries, step)
@@ -220,16 +220,24 @@ with tf.Graph().as_default():
             print('{}: step {}, loss {:g}, acc {:g}'.format(time_str, step, loss, accuracy))
             if writer:
                 writer.add_summary(summaries, step)
+            return accuracy, loss
 
         batches = train_batch_iter(TRAIN_WORDS_DF)
-        for batch in batches:
-            x_batch, y_batch = batch[0], batch[1]
+        for batch_train in batches:
+            x_batch, y_batch = batch_train[0], batch_train[1]
             train_step(x_batch, y_batch)
             current_step = tf.train.global_step(sess, global_step)
             if current_step % FLAGS.evaluate_every == 0:  # 判断是否需要验证模型
                 print('\nEvaluation:')
-                for batch in evl_batch_iter(EVL_WORDS_DF):
-                    dev_step(batch[0], batch[1], writer=dev_summary_writer)
+                accuracy_total = 0
+                loss_total = 0
+                num = 0
+                for batch_evl in evl_batch_iter(EVL_WORDS_DF):
+                    accuracy, loss = dev_step(batch_evl[0], batch_evl[1], writer=dev_summary_writer)
+                    accuracy_total += accuracy
+                    loss_total += loss
+                    num += 1
+                print('loss mean: %s, accuracy mean: %s' % (accuracy_total/float(num), loss_total/float(num)))
                 print('')
             if current_step % FLAGS.checkpoint_every == 0:  # 判断是否需要保存
                 path = saver.save(sess, checkpoint_prefix, global_step=current_step)
